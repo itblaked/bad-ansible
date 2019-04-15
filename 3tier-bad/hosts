@@ -1,33 +1,19 @@
-[3tierapp:vars]
+[frontends] # These are the frontend servers
+frontend1 ansible_host=frontend1."{{ GUID }}".internal
 
-###########################################################################
-### Ansible Vars
-###########################################################################
-timeout=60
-ansible_become=yes
-ansible_ssh_user=ec2-user
-ansible_ssh_private_key_file="~/.ssh/4947key.pem"
-ansible_ssh_common_args="-o StrictHostKeyChecking=no"
-[3tierapp:children]
+[apps] ## These are the apps servers
+app1 ansible_host=app1."{{ GUID }}".internal
+app2 ansible_host=app2."{{ GUID }}".internal
+
+[appdbs] # These are the appdb servers
+appdb1 ansible_host=appdb1."{{ GUID }}".internal
+
+[internal:children]
 frontends
 apps
 appdbs
-support
 
-
-[frontends]
-## These are the frontends
-frontend1.4947.internal ansible_ssh_host=frontend1.4947.example.opentlc.com
-
-[apps]
-## These are the apps
-app1.4947.internal ansible_ssh_host=app1.4947.example.opentlc.com
-app2.4947.internal ansible_ssh_host=app2.4947.example.opentlc.com
-
-[appdbs]
-## These are the appdbs
-appdb1.4947.internal ansible_ssh_host=appdb1.4947.example.opentlc.com
-
-## These are the support
-[support]
-support1.4947.internal ansible_ssh_host=support1.4947.example.opentlc.com
+[internal:vars]
+timeout=60
+ansible_become=yes
+ansible_user=ec2-user

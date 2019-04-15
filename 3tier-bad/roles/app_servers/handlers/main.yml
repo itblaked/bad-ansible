@@ -1,6 +1,0 @@
----
-# handlers file for app_servers
-- name: Restart Services
-  service:
-    name: "{{ services }}"
-    state: restarted

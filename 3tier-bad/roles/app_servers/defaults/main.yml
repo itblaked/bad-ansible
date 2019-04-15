@@ -1,6 +1,0 @@
----
-# defaults file for app_servers
-packages: 
-  - tomcat
-services: 
-  - tomcat

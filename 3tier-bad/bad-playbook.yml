@@ -13,106 +13,144 @@
 #   Bare variables
 #   No use of handlers
 
+- name: configuration
+  hosts: all
+  gather_facts: false # remove later! speeds up testing
+  become: true
 
-- name: Setup Frontend Servers
+  tasks:
+  - name: enable repos
+    template:
+      src: ./open_three-tier-app.repo
+      dest: /etc/yum.repos.d/open_three-tier-app.repo
+      mode: 0644
+
+- name: deploy haproxy
   hosts: frontends
   gather_facts: false # remove later! speeds up testing
   become: true
-  vars:
-    packages: "haproxy,tomcat"
-    services:
-      - haproxy
-      - tomcat
+
   tasks:
-
-  - name: enable repos
-    template:
-      src: ./open_three-tier-app.repo
-      dest: /etc/yum.repos.d/open_three-tier-app.repo
-      mode: 0644
-
-  - name: Install packages
+  - name: http
     package:
-      name: "{{ packages }}"
+      name: httpie
       state: latest
-
-  - name: Enable Services
+  - name: install HAProxy
+    yum:
+      name=haproxy state=latest
+  - name: enable HAProxy
     service:
-      name: "{{ item }}"
-      enabled: yes
-    loop: "{{ services }}"
-
-  - name: Place haproxy config file
+      name: haproxy
+      state: started
+  - name: configure haproxy
     template:
       src: ./haproxy.cfg.j2
       dest: /etc/haproxy/haproxy.cfg
-    notify: Restart Services
+  - name: restart HAproxy
+    service:
+      name: haproxy
+      state: restarted
 
-  - name: Create tomcat directories
-    file:
-      path: "/usr/share/tomcat/webapps/{{ item }}"
-      state: directory
-    loop:
-      - ROOT
-      - ansible
 
-  - name: Place Tomcat index.html
-    template:
-      src: ./index.html.j2
-      dest: "/usr/share/tomcat/webapps/{{ item }}/index.html"
-      mode: 0644
-    loop:
-      - ROOT
-      - ansible
-    notify: Restart Services
-
-  handlers:
-    - name: Restart Services
-      service:
-        name: "{{ services }}"
-        state: restarted
-
-- name: deploy postgres
-  hosts: appdbs
+- name: deploy tomcat
+  hosts: apps
   gather_facts: false
   become: true
-  tags: postgres
-  vars:
-    packages: "postgresql"
-    services:
-      - postgresql
-  tasks:
 
-  - name: enable repos
+  tasks:
+  - name: install tomcat
+    package:
+      name: tomcat
+      state: latest
+  - name: enable tomcat at boot
+    service:
+      name: tomcat
+      enabled: yes
+
+  - name: create ansible tomcat directory
+    file:
+      path: /usr/share/tomcat/webapps/ROOT
+      state: directory
+
+  - name: copy static index.html to tomcat webapps/ansible/index.html
     template:
-      src: ./open_three-tier-app.repo
-      dest: /etc/yum.repos.d/open_three-tier-app.repo
+      src: index.html.j2
+      dest: /usr/share/tomcat/webapps/ROOT/index.html
       mode: 0644
 
-  - name: Install packages
-    package:
-      name: "{{ packages }}"
-      state: latest
-
-  - name: Check if Postgres has been initialized
-    stat:
-        path: /var/lib/pgsql/data 
-    register: pgsql_initialization_state
-
-  - name: Initialize Postgres if needed
-    command: postresql-setup initdb
-    when: pgsql_initialization_state.stat.exists == False
-
-  - name: Enable Services if needed
+  - name: start tomcat
     service:
-      name: "{{ item }}"
-      enabled: enabled
-    loop: "{{ services }}"
-    when: pgsql_initialization_state.stat.exists
-    notify: Restart Services
+      name: tomcat
+      state: started
 
-  handlers:
-    - name: Enable and Restart Services
-      service:
-        name: "{{ services }}"
-        state: restarted
+- name: index.html on app 1
+  hosts: app1
+  gather_facts: false
+  become: true
+
+  tasks:
+  - name: copy static index.html to tomcat webapps/ansible/index.html
+    template:
+      src: index.html.app1
+      dest: /usr/share/tomcat/webapps/ansible/index.html
+
+- name: index.html on app 1
+  hosts: app2
+  gather_facts: false
+  become: true
+
+  tasks:
+  - name: copy static index.html to tomcat webapps/ansible/index.html
+    template:
+      src: index.html.app2
+      dest: /usr/share/tomcat/webapps/ansible/index.html
+
+- name: deploy postgres
+  hosts: apps
+  gather_facts: false
+  become: true
+  hosts: appdbs
+  tasks:
+  - name: install progress
+    command: "yum install -y postgresql-server"
+
+  #- name: install postgres
+  #  yum:
+  #    name: postgresql-server
+  #    state: latest
+  - name: enable apache at boot
+    service:
+      name: postgresql
+      enabled: yes
+  - name: tell user to finish setting up postgres
+    debug:
+      msg: "Either uncomment the postgres setup or manually login and initialize"
+
+ # only run the next 2 tasks once!
+#  - name: initilize postgres
+#    command: postgresql-setup initdb
+#  - name: initilize postgres some more
+#    command: chkconfig postgresql on
+  - name: start postgres
+    service:
+      name: postgresql.service
+      state: started
+
+- name: deploy apache
+  hosts: apps
+  gather_facts: false
+  become: true
+  hosts: apps
+  tasks:
+  - name: install apache
+    yum:
+      name: httpd
+      state: latest
+  - name: enable apache at boot
+    service:
+      name: httpd
+      enabled: yes
+  - name: start apache
+    service:
+      name: httpd
+      state: started
