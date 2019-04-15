@@ -1,0 +1,23 @@
+- name: 3 Tier Environment
+  hosts: all
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Configure Frontend Servers
+      include_role:
+        name: frontend_servers
+      when: "'frontends' in group_names"
+      tags: frontend
+
+    - name: Configure Application Servers
+      include_role:
+        name: app_servers
+      when: "'apps' in group_names"
+      tags: apps
+
+    - name: Configure DB Servers
+      include_role:
+        name: db_servers
+      when: "'appdbs' in group_names"
+      tags: appdbs
+    

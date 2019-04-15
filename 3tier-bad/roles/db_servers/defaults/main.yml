@@ -1,0 +1,6 @@
+---
+# defaults file for db_servers
+packages: 
+  - postgresql
+services: 
+  - postgresql

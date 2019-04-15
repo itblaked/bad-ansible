@@ -1,0 +1,25 @@
+---
+# tasks file for db_servers
+
+- name: Install packages
+  package:
+    name: "{{ packages }}"
+    state: latest
+
+- name: Check if Postgres has been initialized
+  stat:
+      path: /var/lib/pgsql/data 
+  register: pgsql_initialization_state
+
+- name: Initialize Postgres if needed
+  command: postresql-setup initdb
+  when: pgsql_initialization_state.stat.exists == False
+
+- name: Enable Services if initialized
+  service:
+    name: "{{ item }}"
+    enabled: enabled
+  loop: "{{ services }}"
+  when: pgsql_initialization_state.stat.exists
+  notify: Restart Services
+
