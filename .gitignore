@@ -2,4 +2,6 @@
 */env
 *.pem
 */open_three-tier-app.repo
-*/*.secret
+../*.secret
+../*/*/*.secret
+../*/*.secret
