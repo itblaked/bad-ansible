@@ -1,0 +1,6 @@
+---
+# vars file for db_servers
+packages:
+  - postgresql-server
+services:
+  - postgresql

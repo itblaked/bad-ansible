@@ -1,0 +1,6 @@
+---
+# vars file for frontend_servers
+packages:
+  - haproxy
+services:
+  - haproxy

@@ -1,0 +1,39 @@
+---
+# tasks file for app_servers
+
+
+- name: Install packages
+  package:
+    name: "{{ packages }}"
+    state: present
+
+- name: Enable services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: "{{ packages }}"
+
+- name: Ensure tomcat folder exists
+  file:
+    path: "/usr/share/tomcat/webapps/{{ item }}"
+    state: directory
+  loop:
+    - ROOT
+    - ansible
+
+- name: Place Tomcat index.html
+  template:
+    src: index.html.j2
+    dest: "/usr/share/tomcat/webapps/{{ item }}/index.html"
+  loop:
+    - ROOT
+    - ansible
+  notify: Restart Services
+
+- name: Confirm that Tomcat is responding
+  uri:
+    url: "http://{{inventory_hostname}}:8080"
+    return_content: yes
+  register: tomcat_status
+  failed_when: "'Ansible has done its job' not in tomcat_status.content"

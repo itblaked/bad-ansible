@@ -1,0 +1,26 @@
+---
+# tasks file for frontend_servers
+- name: Install packages
+  package:
+    name: "{{ packages }}"
+    state: present
+
+- name: Enable Services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: "{{ packages }}"
+
+- name: Place haproxy config file
+  template:
+    src: ./haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+  notify: Restart Services
+
+- name: Confirm that HAProxy is working
+  uri:
+    url: "http://{{inventory_hostname}}"
+    return_content: yes
+  register: haproxy_status
+  failed_when: "'Ansible has done its job' not in haproxy_status.content"

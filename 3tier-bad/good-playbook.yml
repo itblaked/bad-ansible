@@ -1,0 +1,29 @@
+- name: 3 Tier Environment
+  hosts: all
+  become: true
+  gather_facts: no
+  tasks:
+    - name: Setup Repository
+      tags: repo
+      copy:
+        src: open_three-tier-app.repo
+        dest: /etc/yum.repos.d/open_three-tier-app.repo
+
+    - name: Configure Frontend Servers
+      tags: frontend
+      include_role:
+        name: frontend_servers
+      when: "'frontends' in group_names"
+
+    - name: Configure Application Servers
+      tags: apps
+      include_role:
+        name: app_servers
+      when: "'apps' in group_names"
+
+    - name: Configure DB Servers
+      tags: appdbs
+      include_role:
+        name: db_servers
+      when: "'appdbs' in group_names"
+    

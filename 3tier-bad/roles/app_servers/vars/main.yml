@@ -1,0 +1,6 @@
+---
+# vars file for app_servers
+packages:
+  - tomcat
+services:
+  - tomcat

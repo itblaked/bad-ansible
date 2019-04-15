@@ -1,0 +1,27 @@
+---
+# tasks file for db_servers
+
+- name: Install packages
+  package:
+    name: "{{ packages }}"
+    state: present
+
+- name: Check if Postgres has been initialized
+  find:
+      paths: /var/lib/pgsql/data/
+      file_type: directory
+  register: pgsql
+
+- name: Initialize Postgres if needed
+  command: postgresql-setup initdb
+  when: pgsql.matched is defined and pgsql.matched|int == 0
+  notify: Restart Services
+
+- name: Enable Services if initialized
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: "{{ services }}"
+  when: pgsql.matched is defined and pgsql.matched|int != 0
+
